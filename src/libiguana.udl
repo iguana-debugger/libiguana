@@ -1,3 +1,6 @@
 namespace libiguana {
-    u32 add(u32 a, u32 b);
+};
+
+interface Environment {
+    constructor();
 };

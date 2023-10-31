@@ -6,13 +6,14 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+unicorn-engine = "2.0.1"
 uniffi = { version = "0.25.0", features = [ "cli" ] }
 
 [build-dependencies]
 uniffi = { version = "0.25.0", features = [ "build" ] }
 
 [lib]
-crate-type = ["cdylib"]
+crate-type = ["cdylib", "lib"]
 name = "libiguana"
 
 [[bin]]
