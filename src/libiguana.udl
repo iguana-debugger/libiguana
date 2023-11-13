@@ -1,6 +1,0 @@
-namespace libiguana {
-};
-
-interface Environment {
-    constructor();
-};
