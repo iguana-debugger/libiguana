@@ -57,10 +57,12 @@ impl<'a> Environment<'a> {
                                 .expect("Failed to read memory!");
 
                             let string_bytes = memory
-                                .chunks(4)
                                 .into_iter()
+                                .take_while(|byte| *byte != 0)
+                                .collect::<Vec<_>>()
+                                .chunks(4)
+                                // .into_iter()
                                 .flat_map(|chunk| chunk.into_iter().rev())
-                                .take_while(|byte| **byte != 0)
                                 .map(|borrow| *borrow)
                                 .collect::<Vec<_>>();
 
