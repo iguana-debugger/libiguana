@@ -5,6 +5,8 @@ use std::{
 };
 
 mod error;
+use kmdparse::{parse_kmd, token::Token};
+
 pub use self::error::LibiguanaError;
 
 pub struct Environment {
@@ -43,6 +45,51 @@ impl Environment {
             .to_string();
 
         Ok(response)
+    }
+
+    /// Loads the given .kmd file. [`kmd`] is an unparsed string - parsing is handled by this
+    /// function.
+    pub fn load_kmd(&mut self, kmd: &str) -> Result<(), LibiguanaError> {
+        let parsed = parse_kmd(kmd).map_err(|_| LibiguanaError::ParseError)?.1;
+
+        for token in parsed {
+            if let Token::Line(line) = token {
+                if let Some(word) = line.word {
+                    self.write_memory(word, line.memory_address)?;
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    fn write_memory(&mut self, word: u32, address: u32) -> Result<(), LibiguanaError> {
+        let mut stdin = self
+            .jimulator_process
+            .stdin
+            .as_ref()
+            .ok_or(LibiguanaError::NoStdin)?;
+
+        // Write memory transfer command (mem space, write, 32 bit)
+        stdin
+            .write(&[0b01_00_0_010])
+            .map_err(|e| LibiguanaError::IO(e))?;
+
+        // Write address
+        stdin
+            .write(&address.to_le_bytes())
+            .map_err(|e| LibiguanaError::IO(e))?;
+
+        // Write number of elements (always 1 in this case)
+        stdin
+            .write(&1_u16.to_le_bytes())
+            .map_err(|e| LibiguanaError::IO(e))?;
+
+        stdin
+            .write(&word.to_le_bytes())
+            .map_err(|e| LibiguanaError::IO(e))?;
+
+        Ok(())
     }
 }
 

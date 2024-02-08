@@ -6,4 +6,7 @@ pub enum LibiguanaError {
     NoStdout,
     IO(io::Error),
     Utf8Error(str::Utf8Error),
+
+    // TODO: Give error information on parse errors
+    ParseError,
 }
