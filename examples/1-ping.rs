@@ -1,8 +1,6 @@
 use libiguana::Environment;
 
 fn main() {
-    let kmd = include_str!("hello.kmd");
-
     let mut env = Environment::new().expect("Unable to setup environment!");
 
     let ping_res = env.ping().expect("Ping failed!");
