@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 kmdparse = { git = "https://github.com/iguana-debugger/kmdparse.git", version = "0.1.0" }
 nom = "7.1.3"
+thiserror = "1.0.56"
 
 [lib]
 crate-type = ["cdylib", "lib"]
