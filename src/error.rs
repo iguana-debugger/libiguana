@@ -1,4 +1,4 @@
-use std::{io, num::TryFromIntError, str};
+use std::{array::TryFromSliceError, io, num::TryFromIntError, str};
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -21,4 +21,13 @@ pub enum LibiguanaError {
 
     #[error("An integer overflow occured")]
     IntegerOverflow(#[from] TryFromIntError),
+
+    #[error("Converting from a slice failed (this should never happen)")]
+    TryFromSliceError(#[from] TryFromSliceError),
+
+    #[error("Jimulator returned an invalid status {0:#03x}")]
+    InvalidStatus(u8),
+
+    #[error("The register buffer returned an invalid size {0} (should never happen!)")]
+    InvalidRegisterBufferLength(usize),
 }
