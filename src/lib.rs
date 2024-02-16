@@ -156,11 +156,13 @@ impl Environment {
                 break;
             }
 
-            let read_buf = self.read_to_end()?;
+            let mut buf = vec![0; length as usize];
+
+            self.read_exact(&mut buf)?;
 
             println!("String fragment read");
 
-            let read_str = str::from_utf8(&read_buf)?;
+            let read_str = str::from_utf8(&buf)?;
 
             output.push_str(read_str);
         }
@@ -227,7 +229,9 @@ impl Environment {
             return Ok(());
         }
 
-        println!("Writing {word:?} to {address:#08x}");
+        let word_rev = word.iter().map(|byte| *byte).rev().collect::<Vec<_>>();
+
+        println!("Writing {word_rev:?} to {address:#08x}");
 
         // Write memory transfer command (mem space, write, 8 bit)
         self.write(&[0b01_00_0_000])?;
@@ -235,12 +239,12 @@ impl Environment {
         // Write address
         self.write(&address.to_le_bytes())?;
 
-        let num_elements: u16 = word.len().try_into()?;
+        let num_elements: u16 = word_rev.len().try_into()?;
 
         // Write number of elements (number of elements in address slice)
         self.write(&num_elements.to_le_bytes())?;
 
-        self.write(word)?;
+        self.write(&word_rev)?;
 
         Ok(())
     }

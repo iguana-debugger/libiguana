@@ -3,7 +3,7 @@ use std::{thread::sleep, time::Duration};
 use libiguana::{Environment, Status};
 
 fn main() {
-    let kmd = include_str!("02-meadow.kmd");
+    let kmd = include_str!("hello.kmd");
 
     let mut env = Environment::new().expect("Unable to setup environment!");
 
@@ -25,12 +25,12 @@ fn main() {
     let status = env.status().expect("Failed to get status!");
     println!("{status:?}");
 
-    env.start(10000).expect("Failed to start!");
+    env.start(100).expect("Failed to start!");
 
     loop {
         let status = env.status().expect("Failed to get status!");
 
-        if status.status == Status::Stopped {
+        if status.status == Status::Stopped || status.status == Status::Finished {
             break;
         }
 
