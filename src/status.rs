@@ -1,10 +1,11 @@
 use enum_utils::TryFromRepr;
 
-#[derive(Debug, TryFromRepr)]
+#[derive(Debug, TryFromRepr, PartialEq, Eq)]
 #[repr(u8)]
 pub enum Status {
     Normal = 0x00,
     Busy = 0x01,
+    Stopped = 0x40,
     Breakpoint = 0x41,
     Memfault = 0x43,
     Finished = 0x44,

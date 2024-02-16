@@ -58,6 +58,22 @@ impl Environment {
         Ok(response)
     }
 
+    pub fn read_memory(&mut self, address: u32) -> Result<[u8; 4], LibiguanaError> {
+        // Write memory transfer command (mem space, read, 32 bit)
+        self.write(&[0b01_00_1_010])?;
+
+        // Write address
+        self.write(&address.to_le_bytes())?;
+
+        // Write length (1)
+        self.write(&1_u16.to_le_bytes())?;
+
+        let mut buf = [0; 4];
+        self.read_exact(&mut buf)?;
+
+        Ok(buf)
+    }
+
     pub fn registers(&mut self) -> Result<Registers, LibiguanaError> {
         // Write memory transfer command (reg space, read, 32 bit)
         self.write(&[0b01_01_1_010])?;
@@ -110,8 +126,9 @@ impl Environment {
         Ok(registers)
     }
 
-    pub fn start(&mut self) -> Result<(), LibiguanaError> {
-        self.write(&[0b1011_0000, 0, 0, 0, 0])?;
+    pub fn start(&mut self, steps: u32) -> Result<(), LibiguanaError> {
+        self.write(&[0b1011_0000])?;
+        self.write(&steps.to_le_bytes())?;
 
         Ok(())
     }
