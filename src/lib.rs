@@ -1,14 +1,16 @@
 use std::{
     array::TryFromSliceError,
-    io::{self, Read, Write},
+    io::{Read, Write},
     process::{Child, Command, Stdio},
     str,
+    sync::{Arc, Mutex},
 };
 
 mod error;
 mod registers;
 mod status;
-use kmdparse::{parse_kmd, token::Token};
+mod uniffi_array;
+use kmdparse::{parse_kmd, token::Token, word::Word};
 
 use crate::status::BoardState;
 
@@ -16,29 +18,42 @@ pub use self::error::LibiguanaError;
 pub use self::registers::Registers;
 pub use self::status::Status;
 
+uniffi::setup_scaffolding!();
+
+#[derive(uniffi::Object)]
 pub struct Environment {
-    jimulator_process: Child,
+    jimulator_process: Arc<Mutex<Child>>,
 }
 
+#[uniffi::export]
 impl Environment {
-    pub fn new() -> Result<Self, io::Error> {
+    #[uniffi::constructor]
+    pub fn new() -> Result<Self, LibiguanaError> {
         let jimulator_process = Command::new("jimulator")
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .spawn()?;
 
-        Ok(Self { jimulator_process })
+        let arc_mutex = Arc::new(Mutex::new(jimulator_process));
+
+        Ok(Self {
+            jimulator_process: arc_mutex,
+        })
     }
 
     /// Loads the given .kmd file. [`kmd`] is an unparsed string - parsing is handled by this
     /// function.
-    pub fn load_kmd(&mut self, kmd: &str) -> Result<(), LibiguanaError> {
+    pub fn load_kmd(&self, kmd: &str) -> Result<(), LibiguanaError> {
         let parsed = parse_kmd(kmd).map_err(|_| LibiguanaError::ParseError)?.1;
 
         for token in parsed {
             if let Token::Line(line) = token {
-                if let Some(word) = line.word {
-                    self.write_memory(&word, line.memory_address)?;
+                if let (Some(word_wrapper), Some(memory_address)) = (line.word, line.memory_address)
+                {
+                    match word_wrapper {
+                        Word::Instruction(word) => self.write_memory(&word, memory_address)?,
+                        Word::Data(data) => self.write_memory(&data, memory_address)?,
+                    };
                 }
             }
         }
@@ -46,7 +61,7 @@ impl Environment {
         Ok(())
     }
 
-    pub fn ping(&mut self) -> Result<String, LibiguanaError> {
+    pub fn ping(&self) -> Result<String, LibiguanaError> {
         self.write(&[0b0000_0001])?;
 
         let mut buf = [0; 4];
@@ -58,7 +73,7 @@ impl Environment {
         Ok(response)
     }
 
-    pub fn read_memory(&mut self, address: u32) -> Result<[u8; 4], LibiguanaError> {
+    pub fn read_memory(&self, address: u32) -> Result<[u8; 4], LibiguanaError> {
         // Write memory transfer command (mem space, read, 32 bit)
         self.write(&[0b01_00_1_010])?;
 
@@ -74,7 +89,7 @@ impl Environment {
         Ok(buf)
     }
 
-    pub fn registers(&mut self) -> Result<Registers, LibiguanaError> {
+    pub fn registers(&self) -> Result<Registers, LibiguanaError> {
         // Write memory transfer command (reg space, read, 32 bit)
         self.write(&[0b01_01_1_010])?;
 
@@ -126,31 +141,25 @@ impl Environment {
         Ok(registers)
     }
 
-    pub fn start(&mut self, steps: u32) -> Result<(), LibiguanaError> {
+    pub fn start(&self, steps: u32) -> Result<(), LibiguanaError> {
         self.write(&[0b1011_0000])?;
         self.write(&steps.to_le_bytes())?;
 
         Ok(())
     }
 
-    pub fn terminal_messages(&mut self) -> Result<String, LibiguanaError> {
+    pub fn terminal_messages(&self) -> Result<String, LibiguanaError> {
         let mut length = 1;
         let mut output = String::new();
 
         while length != 0 {
             self.write(&[0b0001_0011, 0, 32])?;
 
-            println!("Write request sent");
-
             let mut len_buf = [0; 1];
 
             self.read_exact(&mut len_buf)?;
 
-            println!("Length read");
-
             length = len_buf[0];
-
-            println!("{length}");
 
             if length == 0 {
                 break;
@@ -160,8 +169,6 @@ impl Environment {
 
             self.read_exact(&mut buf)?;
 
-            println!("String fragment read");
-
             let read_str = str::from_utf8(&buf)?;
 
             output.push_str(read_str);
@@ -170,7 +177,7 @@ impl Environment {
         Ok(output)
     }
 
-    pub fn status(&mut self) -> Result<BoardState, LibiguanaError> {
+    pub fn status(&self) -> Result<BoardState, LibiguanaError> {
         self.write(&[0b0010_0000])?;
 
         let mut buf = [0; 9];
@@ -182,29 +189,48 @@ impl Environment {
 
         let status = BoardState {
             status: Status::try_from(buf[0]).map_err(|_| LibiguanaError::InvalidStatus(buf[0]))?,
-            steps_remaining: steps_remaining,
-            steps_since_reset: steps_since_reset,
+            steps_remaining,
+            steps_since_reset,
         };
 
         Ok(status)
     }
 
-    /// Reads from the jimulator process using read_exact.
-    fn read_exact(&mut self, buf: &mut [u8]) -> Result<(), LibiguanaError> {
-        self.jimulator_process
-            .stdout
-            .as_mut()
-            .ok_or(LibiguanaError::NoStdout)?
-            .read_exact(buf)?;
+    pub fn write_to_terminal(&self, message: &str) -> Result<(), LibiguanaError> {
+        // Komodo almost definitely expects ASCII, it'd be interesting to see what happens when we
+        // send something that doesn't directly translate from UTF-8 to ASCII (i.e., anything not in
+        // ASCII)
+        let buf = message.as_bytes();
+
+        // jimulator only takes one byte as length, so we have to chunk the input into chunks of 256
+        let chunks = buf.chunks(u8::MAX as usize);
+
+        for chunk in chunks {
+            self.write(&[0b0001_0010])?;
+
+            // Terminal 0
+            self.write(&[0])?;
+
+            // to_le_bytes doesn't technically guarantee that the length here is one, but since a
+            // chunk's length can't be more than one u8 it should never happen.
+            self.write(&chunk.len().to_le_bytes())?;
+
+            self.write(chunk)?;
+
+            // jimulator returns 0 after every write for some reason
+            self.read_exact(&mut [0])?;
+        }
 
         Ok(())
     }
 
     /// Reads from the jimulator process using read_until_end.
-    fn read_to_end(&mut self) -> Result<Vec<u8>, LibiguanaError> {
+    fn read_to_end(&self) -> Result<Vec<u8>, LibiguanaError> {
         let mut buf = Vec::new();
 
-        self.jimulator_process
+        let mut process = self.jimulator_process.lock().unwrap();
+
+        process
             .stdout
             .as_mut()
             .ok_or(LibiguanaError::NoStdout)?
@@ -214,8 +240,10 @@ impl Environment {
     }
 
     /// Writes the given byte array to the jimulator process.
-    fn write(&mut self, payload: &[u8]) -> Result<(), LibiguanaError> {
-        self.jimulator_process
+    fn write(&self, payload: &[u8]) -> Result<(), LibiguanaError> {
+        let process = self.jimulator_process.lock().unwrap();
+
+        process
             .stdin
             .as_ref()
             .ok_or(LibiguanaError::NoStdin)?
@@ -224,14 +252,10 @@ impl Environment {
         Ok(())
     }
 
-    fn write_memory(&mut self, word: &[u8], address: u32) -> Result<(), LibiguanaError> {
+    fn write_memory(&self, word: &[u8], address: u32) -> Result<(), LibiguanaError> {
         if word.is_empty() {
             return Ok(());
         }
-
-        let word_rev = word.iter().map(|byte| *byte).rev().collect::<Vec<_>>();
-
-        println!("Writing {word_rev:?} to {address:#08x}");
 
         // Write memory transfer command (mem space, write, 8 bit)
         self.write(&[0b01_00_0_000])?;
@@ -239,12 +263,33 @@ impl Environment {
         // Write address
         self.write(&address.to_le_bytes())?;
 
-        let num_elements: u16 = word_rev.len().try_into()?;
+        let num_elements: u16 = word.len().try_into()?;
 
         // Write number of elements (number of elements in address slice)
         self.write(&num_elements.to_le_bytes())?;
 
-        self.write(&word_rev)?;
+        self.write(word)?;
+
+        Ok(())
+    }
+}
+
+// uniffi doesn't support &mut [T], so we extract it into a trait here (luckily read_exact is
+// internal)
+trait ReadExact {
+    fn read_exact(&self, buf: &mut [u8]) -> Result<(), LibiguanaError>;
+}
+
+impl ReadExact for Environment {
+    /// Reads from the jimulator process using read_exact.
+    fn read_exact(&self, buf: &mut [u8]) -> Result<(), LibiguanaError> {
+        let mut process = self.jimulator_process.lock().unwrap();
+
+        process
+            .stdout
+            .as_mut()
+            .ok_or(LibiguanaError::NoStdout)?
+            .read_exact(buf)?;
 
         Ok(())
     }
@@ -252,7 +297,9 @@ impl Environment {
 
 impl Drop for Environment {
     fn drop(&mut self) {
+        let mut process = self.jimulator_process.lock().unwrap();
+
         // We should probably check for errors here?
-        let _ = self.jimulator_process.kill();
+        let _ = process.kill();
     }
 }

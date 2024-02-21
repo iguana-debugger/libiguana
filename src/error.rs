@@ -1,7 +1,8 @@
 use std::{array::TryFromSliceError, io, num::TryFromIntError, str};
 use thiserror::Error;
 
-#[derive(Debug, Error)]
+#[derive(Debug, Error, uniffi::Error)]
+#[uniffi(flat_error)]
 pub enum LibiguanaError {
     #[error("jimulator process has no stdin")]
     NoStdin,

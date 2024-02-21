@@ -1,4 +1,4 @@
-#[derive(Debug)]
+#[derive(Debug, uniffi::Record)]
 pub struct Registers {
     pub r0: u32,
     pub r1: u32,

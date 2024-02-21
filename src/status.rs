@@ -1,6 +1,6 @@
 use enum_utils::TryFromRepr;
 
-#[derive(Debug, TryFromRepr, PartialEq, Eq)]
+#[derive(Debug, TryFromRepr, PartialEq, Eq, uniffi::Enum)]
 #[repr(u8)]
 pub enum Status {
     Normal = 0x00,
@@ -15,7 +15,7 @@ pub enum Status {
     Broken = 0x30,
 }
 
-#[derive(Debug)]
+#[derive(Debug, uniffi::Record)]
 pub struct BoardState {
     pub status: Status,
     pub steps_remaining: u32,
