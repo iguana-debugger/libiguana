@@ -19,6 +19,8 @@ jobs:
         run: cargo install cargo-swift
       - name: Build Swift package
         run: cargo swift package --release --name Libiguana --platforms macos
+      - name: Copy jimulator into Swift package
+        run: cp libiguana Libiguana/
       - name: Copy Swift package to repo
         uses: andstor/copycat-action@v3
         with:
