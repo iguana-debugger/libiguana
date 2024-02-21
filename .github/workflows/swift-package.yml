@@ -13,6 +13,7 @@ jobs:
 
       - name: Compile Jimulator
         run: clang++ -O2 -std=c++14 -arch x86_64 -arch arm64 -o jimulator jimulator.cpp
+      - name: Strip Jimulator
         run: strip jimulator
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
