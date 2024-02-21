@@ -13,7 +13,7 @@ thiserror = "1.0.56"
 uniffi = "0.26.1"
 
 [lib]
-crate-type = ["cdylib", "lib"]
+crate-type = ["staticlib", "lib"]
 name = "libiguana"
 
 [build-dependencies]
