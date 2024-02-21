@@ -10,7 +10,7 @@ pub enum LibiguanaError {
     #[error("jimulator process has no stdout")]
     NoStdout,
 
-    #[error("An IO error occured when reading/writing to jimulator")]
+    #[error("An IO error occured when reading/writing to jimulator: {0:?}")]
     IO(#[from] io::Error),
 
     #[error("jimulator returned a string that was not valid UTF-8")]
