@@ -7,15 +7,14 @@ on:
 
 jobs:
   swift-package:
+    runs-on: macos-latest
     steps:
-      runs-on: macos-latest
-      steps:
-        - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-        - name: Compile Jimulator
-          run: clang++ -O2 -std=c++14 -arch x86_64 -arch arm64 -o jimulator jimulator.cpp
-        - name: Upload Artifact
-          uses: actions/upload-artifact@v4
-          with:
-            name: jimulator
-            path: jimulator
+      - name: Compile Jimulator
+        run: clang++ -O2 -std=c++14 -arch x86_64 -arch arm64 -o jimulator jimulator.cpp
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: jimulator
+          path: jimulator
