@@ -15,8 +15,15 @@ jobs:
         run: clang++ -O2 -std=c++14 -arch x86_64 -arch arm64 -o jimulator jimulator.cpp
       - name: Strip Jimulator
         run: strip jimulator
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v4
+      - name: Install cargo-swift
+        run: cargo install cargo-swift
+      - name: Build Swift package
+        run: cargo swift package --release --name Libiguana --platforms macos
+      - name: Copy Swift package to repo
+        uses: andstor/copycat-action@v3
         with:
-          name: jimulator
-          path: jimulator
+          personal_token: ${{ secrets.PERSONAL_TOKEN }}
+          src_path: /Libiguana
+          dst_path: /.
+          dst_owner: iguana-debugger
+          dst_repo_name: libiguana-swift
