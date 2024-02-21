@@ -1,7 +1,7 @@
-use libiguana::Environment;
+use libiguana::IguanaEnvironment;
 
 fn main() {
-    let env = Environment::new().expect("Unable to setup environment!");
+    let env = IguanaEnvironment::new().expect("Unable to setup environment!");
 
     let ping_res = env.ping().expect("Ping failed!");
 

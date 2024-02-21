@@ -21,12 +21,12 @@ pub use self::status::Status;
 uniffi::setup_scaffolding!();
 
 #[derive(uniffi::Object)]
-pub struct Environment {
+pub struct IguanaEnvironment {
     jimulator_process: Arc<Mutex<Child>>,
 }
 
 #[uniffi::export]
-impl Environment {
+impl IguanaEnvironment {
     #[uniffi::constructor]
     pub fn new() -> Result<Self, LibiguanaError> {
         let jimulator_process = Command::new("jimulator")
@@ -280,7 +280,7 @@ trait ReadExact {
     fn read_exact(&self, buf: &mut [u8]) -> Result<(), LibiguanaError>;
 }
 
-impl ReadExact for Environment {
+impl ReadExact for IguanaEnvironment {
     /// Reads from the jimulator process using read_exact.
     fn read_exact(&self, buf: &mut [u8]) -> Result<(), LibiguanaError> {
         let mut process = self.jimulator_process.lock().unwrap();
@@ -295,7 +295,7 @@ impl ReadExact for Environment {
     }
 }
 
-impl Drop for Environment {
+impl Drop for IguanaEnvironment {
     fn drop(&mut self) {
         let mut process = self.jimulator_process.lock().unwrap();
 
