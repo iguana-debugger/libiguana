@@ -18,7 +18,7 @@ jobs:
       - name: Install cargo-swift
         run: cargo install cargo-swift
       - name: Install Rust toolchains
-        run: rustup toolchain install aarch64-apple-darwin x86_64-apple-darwin
+        run: rustup toolchain install stable-aarch64-apple-darwin stable-x86_64-apple-darwin
       - name: Build Swift package
         run: cargo swift package --release --name Libiguana --platforms macos
       - name: Copy jimulator into Swift package
