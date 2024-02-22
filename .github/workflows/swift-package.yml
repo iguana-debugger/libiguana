@@ -22,7 +22,7 @@ jobs:
       - name: Build Swift package
         run: cargo swift package --release --name Libiguana --platforms macos
       - name: Patch Package.swift
-        run: patch < swift-extras/add-binary-resource.diff
+        run: patch Libiguana/Package.swift < swift-extras/add-binary-resource.diff
       - name: Copy init extension into package
         run: cp swift-extras/IguanaEnvironment+init.swift Libiguana/Sources/Libiguana
       - name: Copy jimulator into Swift package
