@@ -28,7 +28,7 @@ jobs:
       - name: Copy jimulator into Swift package
         run: mkdir Libiguana/Sources/Libiguana/Resources && cp jimulator Libiguana/Sources/Libiguana/Resources
       - name: Copy Swift package to repo
-        uses: nkoppel/push-files-to-another-repository@1.1.2
+        uses: nkoppel/push-files-to-another-repository@v1.1.2
         env:
           API_TOKEN_GITHUB: ${{ secrets.PERSONAL_TOKEN }}
         with:
