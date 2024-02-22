@@ -12,6 +12,6 @@ public extension IguanaEnvironment {
     public convenience init() throws {
         let path = Bundle.module.path(forResource: "jimulator", ofType: nil)!
         
-        self.init(path: path)
+        try self.init(path: path)
     }
 }
