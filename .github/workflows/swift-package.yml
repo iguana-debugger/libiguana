@@ -28,10 +28,13 @@ jobs:
       - name: Copy jimulator into Swift package
         run: mkdir Libiguana/Sources/Libiguana/Resources && cp jimulator Libiguana/Sources/Libiguana/Resources
       - name: Copy Swift package to repo
-        uses: andstor/copycat-action@v3
+        uses: nkoppel/push-files-to-another-repository@1.1.0
+        env:
+          API_TOKEN_GITHUB: ${{ secrets.PERSONAL_TOKEN }}
         with:
           personal_token: ${{ secrets.PERSONAL_TOKEN }}
-          src_path: /Libiguana
-          dst_path: /.
-          dst_owner: iguana-debugger
-          dst_repo_name: libiguana-swift
+          source-files: /Libiguana
+          destination-username: iguana-debugger
+          destination-repository: libiguana-swift
+          commit-username: James Harvey
+          commit-email: 44349936+jmshrv@users.noreply.github.com
