@@ -28,8 +28,8 @@ pub struct IguanaEnvironment {
 #[uniffi::export]
 impl IguanaEnvironment {
     #[uniffi::constructor]
-    pub fn new() -> Result<Self, LibiguanaError> {
-        let jimulator_process = Command::new("jimulator")
+    pub fn new(path: &str) -> Result<Self, LibiguanaError> {
+        let jimulator_process = Command::new(path)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .spawn()?;
