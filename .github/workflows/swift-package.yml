@@ -27,12 +27,13 @@ jobs:
         run: cp swift-extras/IguanaEnvironment+init.swift Libiguana/Sources/Libiguana
       - name: Copy jimulator into Swift package
         run: mkdir Libiguana/Sources/Libiguana/Resources && cp jimulator Libiguana/Sources/Libiguana/Resources
-      - name: Copy Swift package to repo
+      - name: Checkout libiguana-swift
         uses: actions/checkout@v4
         with:
           repository: iguana-debugger/libiguana-swift
           token: ${{ secrets.PERSONAL_TOKEN }}
           path: libiguana-swift
+      - name: Copy Swift package to libiguana-swift
         run: |
           rm -r libiguana-swift/*
           cp -r Libiguana/* libiguana-swift/
