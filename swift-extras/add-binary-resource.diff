@@ -1,0 +1,12 @@
++++ Libiguana/Package.swift	2024-02-22 17:54:59
+@@ -23,6 +23,9 @@
+             name: "Libiguana",
+             dependencies: [
+                 .target(name: "RustFramework")
++            ],
++            resources: [
++                .copy("Resources/jimulator")
+             ]
+         ),
+     ]
+\ No newline at end of file

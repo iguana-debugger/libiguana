@@ -21,8 +21,12 @@ jobs:
         run: rustup target add aarch64-apple-darwin x86_64-apple-darwin
       - name: Build Swift package
         run: cargo swift package --release --name Libiguana --platforms macos
+      - name: Patch Package.swift
+        run: patch < swift-extras/add-binary-resource.diff
+      - name: Copy init extension into package
+        run: cp swift-extras/IguanaEnvironment+init.swift Libiguana/Sources/Libiguana
       - name: Copy jimulator into Swift package
-        run: cp jimulator Libiguana/
+        run: mkdir Libiguana/Sources/Libiguana/Resources && cp jimulator Libiguana/Sources/Libiguana/Resources
       - name: Copy Swift package to repo
         uses: andstor/copycat-action@v3
         with:
