@@ -302,5 +302,9 @@ impl Drop for IguanaEnvironment {
         if let Err(e) = process.kill() {
             eprintln!("Failed to kill jimulator process: {e:?}");
         }
+
+        if let Err(e) = process.wait() {
+            eprintln!("Error occured while waiting for jimulator process to quit: {e:?}");
+        }
     }
 }
