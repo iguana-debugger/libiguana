@@ -41,6 +41,12 @@ impl IguanaEnvironment {
         })
     }
 
+    pub fn continue_execution(&self) -> Result<(), LibiguanaError> {
+        self.write(&[0b0010_0010])?;
+
+        Ok(())
+    }
+
     /// Loads the given .kmd file. [`kmd`] is an unparsed string - parsing is handled by this
     /// function.
     pub fn load_kmd(&self, kmd: &str) -> Result<(), LibiguanaError> {
@@ -57,6 +63,13 @@ impl IguanaEnvironment {
                 }
             }
         }
+
+        Ok(())
+    }
+
+    // Pauses execution.
+    pub fn pause(&self) -> Result<(), LibiguanaError> {
+        self.write(&[0b0010_0010])?;
 
         Ok(())
     }
@@ -141,9 +154,17 @@ impl IguanaEnvironment {
         Ok(registers)
     }
 
-    pub fn start(&self, steps: u32) -> Result<(), LibiguanaError> {
+    /// Starts execution, with the given step limit. If the step limit is 0, the emulator will
+    /// execute indefinitely.
+    pub fn start_execution(&self, steps: u32) -> Result<(), LibiguanaError> {
         self.write(&[0b1011_0000])?;
         self.write(&steps.to_le_bytes())?;
+
+        Ok(())
+    }
+
+    pub fn stop_execution(&self) -> Result<(), LibiguanaError> {
+        self.write(&[0b0010_0001])?;
 
         Ok(())
     }
