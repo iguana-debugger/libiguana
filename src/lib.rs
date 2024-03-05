@@ -299,7 +299,8 @@ impl Drop for IguanaEnvironment {
     fn drop(&mut self) {
         let mut process = self.jimulator_process.lock().unwrap();
 
-        // We should probably check for errors here?
-        let _ = process.kill();
+        if let Err(e) = process.kill() {
+            eprintln!("Failed to kill jimulator process: {e:?}");
+        }
     }
 }
