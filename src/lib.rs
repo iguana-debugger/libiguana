@@ -154,6 +154,12 @@ impl IguanaEnvironment {
         Ok(registers)
     }
 
+    pub fn reset(&self) -> Result<(), LibiguanaError> {
+        self.write(&[0b0000_0100])?;
+
+        Ok(())
+    }
+
     /// Starts execution, with the given step limit. If the step limit is 0, the emulator will
     /// execute indefinitely.
     pub fn start_execution(&self, steps: u32) -> Result<(), LibiguanaError> {
