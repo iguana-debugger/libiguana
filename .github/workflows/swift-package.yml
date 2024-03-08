@@ -38,7 +38,7 @@ jobs:
         run: |
           cd kmdparse
           cargo swift package --release --name Kmdparse --platforms macos
-          cp Kmdparse/Sources/Kmdparse/kmdparse.swift Libiguana/Sources/Libiguana
+          cp Kmdparse/Sources/Kmdparse/kmdparse.swift ../Libiguana/Sources/Libiguana
           cd ..
 
       - name: Checkout libiguana-swift
