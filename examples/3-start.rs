@@ -7,7 +7,7 @@ fn main() {
 
     env.load_kmd(kmd).expect("Load kmd failed!");
 
-    env.start(0).expect("Failed to start!");
+    env.start_execution(0).expect("Failed to start!");
 
     loop {
         let status = env.status().expect("Failed to get status!");

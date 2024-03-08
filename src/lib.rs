@@ -23,6 +23,8 @@ uniffi::setup_scaffolding!();
 #[derive(uniffi::Object)]
 pub struct IguanaEnvironment {
     jimulator_process: Arc<Mutex<Child>>,
+
+    current_kmd: Arc<Mutex<Option<Vec<Token>>>>,
 }
 
 #[uniffi::export]
@@ -38,6 +40,7 @@ impl IguanaEnvironment {
 
         Ok(Self {
             jimulator_process: arc_mutex,
+            current_kmd: Arc::new(Mutex::new(None)),
         })
     }
 
@@ -47,22 +50,33 @@ impl IguanaEnvironment {
         Ok(())
     }
 
+    pub fn current_kmd(&self) -> Option<Vec<Token>> {
+        self.current_kmd.lock().unwrap().clone()
+    }
+
     /// Loads the given .kmd file. [`kmd`] is an unparsed string - parsing is handled by this
     /// function.
     pub fn load_kmd(&self, kmd: &str) -> Result<(), LibiguanaError> {
+        let mut current_kmd = self.current_kmd.lock().unwrap();
+
         let parsed = parse_kmd(kmd).map_err(|_| LibiguanaError::ParseError)?.1;
 
-        for token in parsed {
-            if let Token::Line(line) = token {
-                if let (Some(word_wrapper), Some(memory_address)) = (line.word, line.memory_address)
+        for token in &parsed {
+            if let Token::Line { line } = token {
+                if let (Some(word_wrapper), Some(memory_address)) =
+                    (line.word.clone(), line.memory_address)
                 {
                     match word_wrapper {
-                        Word::Instruction(word) => self.write_memory(&word, memory_address)?,
-                        Word::Data(data) => self.write_memory(&data, memory_address)?,
+                        Word::Instruction { instruction } => {
+                            self.write_memory(&instruction, memory_address)?
+                        }
+                        Word::Data { data } => self.write_memory(&data, memory_address)?,
                     };
                 }
             }
         }
+
+        *current_kmd = Some(parsed);
 
         Ok(())
     }
