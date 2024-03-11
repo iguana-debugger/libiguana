@@ -65,15 +65,15 @@ impl IguanaEnvironment {
         let parsed = parse_kmd(kmd).map_err(|_| LibiguanaError::ParseError)?.1;
 
         for token in &parsed {
-            if let Token::Line { line } = token {
+            if let Token::Line(line) = token {
                 if let (Some(word_wrapper), Some(memory_address)) =
                     (line.word.clone(), line.memory_address)
                 {
                     match word_wrapper {
-                        Word::Instruction { instruction } => {
+                        Word::Instruction(instruction) => {
                             self.write_memory(&instruction, memory_address)?
                         }
-                        Word::Data { data } => self.write_memory(&data, memory_address)?,
+                        Word::Data(data) => self.write_memory(&data, memory_address)?,
                     };
                 }
             }

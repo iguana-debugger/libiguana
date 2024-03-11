@@ -13,10 +13,10 @@ impl From<Token> for KmdparseToken {
     fn from(value: Token) -> Self {
         match value {
             Token::Tag => Self::Tag,
-            Token::Line { line } => Self::Line {
+            Token::Line(line) => Self::Line {
                 line: KmdparseLine::from(line),
             },
-            Token::Label { label } => Self::Label {
+            Token::Label(label) => Self::Label {
                 label: KmdparseLabel::from(label),
             },
         }

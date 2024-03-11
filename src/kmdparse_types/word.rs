@@ -15,8 +15,8 @@ pub enum KmdparseWord {
 impl From<Word> for KmdparseWord {
     fn from(value: Word) -> Self {
         match value {
-            Word::Instruction { instruction } => Self::Instruction { instruction },
-            Word::Data { data } => Self::Data { data },
+            Word::Instruction(instruction) => Self::Instruction { instruction },
+            Word::Data(data) => Self::Data { data },
         }
     }
 }
