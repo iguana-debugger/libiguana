@@ -7,10 +7,13 @@ use std::{
 };
 
 mod error;
+mod kmdparse_types;
 mod registers;
 mod status;
 mod uniffi_array;
+
 use kmdparse::{parse_kmd, token::Token, word::Word};
+use kmdparse_types::token::KmdparseToken;
 
 use crate::status::BoardState;
 
@@ -24,7 +27,7 @@ uniffi::setup_scaffolding!();
 pub struct IguanaEnvironment {
     jimulator_process: Arc<Mutex<Child>>,
 
-    current_kmd: Arc<Mutex<Option<Vec<Token>>>>,
+    current_kmd: Arc<Mutex<Option<Vec<KmdparseToken>>>>,
 }
 
 #[uniffi::export]
@@ -50,7 +53,7 @@ impl IguanaEnvironment {
         Ok(())
     }
 
-    pub fn current_kmd(&self) -> Option<Vec<Token>> {
+    pub fn current_kmd(&self) -> Option<Vec<KmdparseToken>> {
         self.current_kmd.lock().unwrap().clone()
     }
 
@@ -76,7 +79,12 @@ impl IguanaEnvironment {
             }
         }
 
-        *current_kmd = Some(parsed);
+        let converted_kmd = parsed
+            .into_iter()
+            .map(|token| KmdparseToken::from(token))
+            .collect::<Vec<_>>();
+
+        *current_kmd = Some(converted_kmd);
 
         Ok(())
     }
