@@ -405,13 +405,11 @@ int main(int argc, char** argv) {
     emulWPFlag[1] = (1 << NO_OF_WATCHPOINTS) - 1;
   }
 
-  pid_t initialPid = getppid();
-
   while (true) {
     // If there is no parent process, exit. This stops MacIguana from leaving
     // orphaned jimulators about taking up 100% CPU.
     // https://stackoverflow.com/a/2035683/8532605
-    if (initialPid != getppid()) {
+    if (getppid() == 1) {
       exit(0);
     }
 
