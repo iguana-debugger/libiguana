@@ -27,20 +27,6 @@ jobs:
         run: cp swift-extras/IguanaEnvironment+init.swift Libiguana/Sources/Libiguana
       - name: Copy jimulator into Swift package
         run: mkdir Libiguana/Sources/Libiguana/Resources && cp jimulator Libiguana/Sources/Libiguana/Resources
-      - name: Checkout kmdparse
-        uses: actions/checkout@v4
-        with:
-          repository: iguana-debugger/kmdparse
-          path: kmdparse
-
-      # https://mozilla.github.io/uniffi-rs/udl/ext_types_external.html#swift
-      - name: Build kmdparse Swift package
-        run: |
-          cd kmdparse
-          cargo swift package --release --name Kmdparse --platforms macos
-          cp Kmdparse/Sources/Kmdparse/kmdparse.swift Libiguana/Sources/Libiguana
-          cd ..
-
       - name: Checkout libiguana-swift
         uses: actions/checkout@v4
         with:
