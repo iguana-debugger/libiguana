@@ -15,6 +15,10 @@ jobs:
         run: clang++ -O2 -std=c++14 -arch x86_64 -arch arm64 -o jimulator jimulator.cpp
       - name: Strip Jimulator
         run: strip jimulator
+      - name: Compile aasm
+        run: gcc-13 -O2 -arch x86_64 -arch arm64 -o aasm aasm.c
+      - name: Strip aasm
+        run: strip aasm
       - name: Install cargo-swift
         run: cargo install cargo-swift
       - name: Install Rust targets
@@ -25,8 +29,12 @@ jobs:
         run: patch Libiguana/Package.swift < swift-extras/add-binary-resource.diff
       - name: Copy init extension into package
         run: cp swift-extras/IguanaEnvironment+init.swift Libiguana/Sources/Libiguana
-      - name: Copy jimulator into Swift package
-        run: mkdir Libiguana/Sources/Libiguana/Resources && cp jimulator Libiguana/Sources/Libiguana/Resources
+      - name: Copy jimulator and aasm into Swift package
+        run: |
+          mkdir Libiguana/Sources/Libiguana/Resources
+          cp jimulator Libiguana/Sources/Libiguana/Resources
+          cp aasm Libiguana/Sources/Libiguana/Resources
+          cp mnemonics Libiguana/Sources/Libiguana/Resources
       - name: Checkout libiguana-swift
         uses: actions/checkout@v4
         with:
