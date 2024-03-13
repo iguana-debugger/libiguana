@@ -1,4 +1,4 @@
-use std::{array::TryFromSliceError, io, num::TryFromIntError, str};
+use std::{array::TryFromSliceError, io, num::TryFromIntError, str, string::FromUtf8Error};
 use thiserror::Error;
 
 #[derive(Debug, Error, uniffi::Error)]
@@ -13,7 +13,7 @@ pub enum LibiguanaError {
     #[error("An IO error occured when reading/writing to jimulator: {0:?}")]
     IO(#[from] io::Error),
 
-    #[error("jimulator returned a string that was not valid UTF-8")]
+    #[error("A string that was not valid UTF-8 was returned")]
     Utf8Error(#[from] str::Utf8Error),
 
     // TODO: Give error information on parse errors
@@ -31,4 +31,13 @@ pub enum LibiguanaError {
 
     #[error("The register buffer returned an invalid size {0} (should never happen!)")]
     InvalidRegisterBufferLength(usize),
+
+    #[error("The aasm binary was not found.")]
+    AasmDoesNotExist,
+
+    #[error("A string that was not valid UTF-8 was returned")]
+    FromUtf8Error(#[from] FromUtf8Error),
+
+    #[error("The mnemonics file was not found.")]
+    MnemonicsDoesNotExist,
 }

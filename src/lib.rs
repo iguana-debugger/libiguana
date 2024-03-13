@@ -1,11 +1,13 @@
 use std::{
     array::TryFromSliceError,
     io::{Read, Write},
+    path::Path,
     process::{Child, Command, Stdio},
     str,
     sync::{Arc, Mutex},
 };
 
+mod aasm_output;
 mod error;
 mod kmdparse_types;
 mod registers;
@@ -17,6 +19,7 @@ use kmdparse_types::token::KmdparseToken;
 
 use crate::status::BoardState;
 
+pub use self::aasm_output::AasmOutput;
 pub use self::error::LibiguanaError;
 pub use self::registers::Registers;
 pub use self::status::Status;
@@ -25,26 +28,78 @@ uniffi::setup_scaffolding!();
 
 #[derive(uniffi::Object)]
 pub struct IguanaEnvironment {
+    /// The jimulator process that `IguanaEnvironment` controls. This process is killed on `Drop`.
     jimulator_process: Arc<Mutex<Child>>,
 
+    /// The currently loaded `.kmd` file
     current_kmd: Arc<Mutex<Option<Vec<KmdparseToken>>>>,
+
+    /// The path to an `aasm` binary
+    aasm_path: String,
 }
 
 #[uniffi::export]
 impl IguanaEnvironment {
+    /// Creates a new environment.
+    ///
+    /// While `jimulator_path` can be anything that resolves to a jimulator executable (by that, I
+    /// mean you can just put `jimulator` if it is in your PATH), `aasm_path` must be an absolute
+    /// path to an `aasm` executable. There must also be a file called `mnemonics` in the same
+    /// directory.
     #[uniffi::constructor]
-    pub fn new(path: &str) -> Result<Self, LibiguanaError> {
-        let jimulator_process = Command::new(path)
+    pub fn new(jimulator_path: &str, aasm_path_str: String) -> Result<Self, LibiguanaError> {
+        let aasm_path = Path::new(&aasm_path_str);
+
+        if !aasm_path.exists() {
+            return Err(LibiguanaError::AasmDoesNotExist);
+        }
+
+        match aasm_path.parent() {
+            Some(parent) => {
+                if !parent.join("mnemonics").exists() {
+                    return Err(LibiguanaError::MnemonicsDoesNotExist);
+                }
+            }
+            None => return Err(LibiguanaError::MnemonicsDoesNotExist),
+        }
+
+        let jimulator_process = Command::new(jimulator_path)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .spawn()?;
 
-        let arc_mutex = Arc::new(Mutex::new(jimulator_process));
+        let jimulator_arc_mutex = Arc::new(Mutex::new(jimulator_process));
 
         Ok(Self {
-            jimulator_process: arc_mutex,
+            jimulator_process: jimulator_arc_mutex,
             current_kmd: Arc::new(Mutex::new(None)),
+            aasm_path: aasm_path_str,
         })
+    }
+
+    pub fn compile_aasm(&self, aasm_string: &str) -> Result<AasmOutput, LibiguanaError> {
+        let mut aasm_command = Command::new(&self.aasm_path)
+            .args(["-lk", "/dev/stderr", "/dev/stdin"])
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()?;
+
+        // Write the aasm string into aasm
+        aasm_command
+            .stdin
+            .as_mut()
+            .ok_or(LibiguanaError::NoStdin)?
+            .write_all(aasm_string.as_bytes())?;
+
+        let output = aasm_command.wait_with_output()?;
+
+        let kmd = String::from_utf8(output.stderr)?;
+        let aasm_terminal = String::from_utf8(output.stdout)?;
+
+        let aasm_output = AasmOutput { kmd, aasm_terminal };
+
+        Ok(aasm_output)
     }
 
     pub fn continue_execution(&self) -> Result<(), LibiguanaError> {
