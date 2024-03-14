@@ -6,6 +6,7 @@
 +            ],
 +            resources: [
 +                .copy("Resources/jimulator")
++                .copy("Resources/aasm")
              ]
          ),
      ]

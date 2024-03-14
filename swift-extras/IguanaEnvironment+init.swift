@@ -8,10 +8,11 @@
 import Foundation
 
 public extension IguanaEnvironment {
-    /// Initialises `IguanaEnvironment` using the bundled `jimulator` executable.
+    /// Initialises `IguanaEnvironment` using the bundled `jimulator` and `aasm` executable.
     public convenience init() throws {
-        let path = Bundle.module.path(forResource: "jimulator", ofType: nil)!
+        let jimulatorPath = Bundle.module.path(forResource: "jimulator", ofType: nil)!
+        let aasmPathStr = Bundle.module.path(forResource: "aasm", ofType: nil)!
         
-        try self.init(path: path)
+        try self.init(jimulatorPath: jimulatorPath, aasmPathStr: aasmPathStr)
     }
 }
