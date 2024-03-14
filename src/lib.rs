@@ -36,6 +36,9 @@ pub struct IguanaEnvironment {
 
     /// The path to an `aasm` binary
     aasm_path: String,
+
+    /// The path to the `mnemonics` file required by `aasm`.
+    mnemonics_path: String,
 }
 
 #[uniffi::export]
@@ -47,21 +50,18 @@ impl IguanaEnvironment {
     /// path to an `aasm` executable. There must also be a file called `mnemonics` in the same
     /// directory.
     #[uniffi::constructor]
-    pub fn new(jimulator_path: &str, aasm_path_str: String) -> Result<Self, LibiguanaError> {
-        let aasm_path = Path::new(&aasm_path_str);
-
-        if !aasm_path.exists() {
+    pub fn new(
+        jimulator_path: &str,
+        aasm_path: String,
+        mnemonics_path: String,
+    ) -> Result<Self, LibiguanaError> {
+        if !Path::new(&aasm_path).exists() {
             return Err(LibiguanaError::AasmDoesNotExist);
         }
 
-        // match aasm_path.parent() {
-        //     Some(parent) => {
-        //         if !parent.join("mnemonics").exists() {
-        //             return Err(LibiguanaError::MnemonicsDoesNotExist);
-        //         }
-        //     }
-        //     None => return Err(LibiguanaError::MnemonicsDoesNotExist),
-        // }
+        if !Path::new(&mnemonics_path).exists() {
+            return Err(LibiguanaError::MnemonicsDoesNotExist);
+        }
 
         let jimulator_process = Command::new(jimulator_path)
             .stdin(Stdio::piped())
@@ -73,13 +73,20 @@ impl IguanaEnvironment {
         Ok(Self {
             jimulator_process: jimulator_arc_mutex,
             current_kmd: Arc::new(Mutex::new(None)),
-            aasm_path: aasm_path_str,
+            aasm_path,
+            mnemonics_path,
         })
     }
 
     pub fn compile_aasm(&self, aasm_string: &str) -> Result<AasmOutput, LibiguanaError> {
         let mut aasm_command = Command::new(&self.aasm_path)
-            .args(["-lk", "/dev/stderr", "/dev/stdin"])
+            .args([
+                "-lk",
+                "/dev/stderr",
+                "-m",
+                &self.mnemonics_path,
+                "/dev/stdin",
+            ])
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())

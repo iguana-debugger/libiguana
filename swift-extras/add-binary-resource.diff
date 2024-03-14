@@ -1,12 +1,13 @@
 +++ Libiguana/Package.swift	2024-02-22 18:34:30
-@@ -23,6 +23,10 @@
+@@ -23,6 +23,11 @@
              name: "Libiguana",
              dependencies: [
                  .target(name: "RustFramework")
 +            ],
 +            resources: [
 +                .copy("Resources/jimulator"),
-+                .copy("Resources/aasm")
++                .copy("Resources/aasm"),
++                .copy("Resources/mnemonics"),
              ]
          ),
      ]
