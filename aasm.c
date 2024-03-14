@@ -445,6 +445,8 @@ int        symbols_stdout, list_stdout, hex_stdout, elf_stdout;   /* Booleans */
 int        verilog_stdout;
 label_sort symbols_order;
 int        list_sym, list_kmd;
+int        mnemonics_stdout;
+char      *mnemonics_filename = NULL;
 
 unsigned char Verilog_array[VERILOG_MAX]; /* Assemble Verilog output in array */
 unsigned int verilog_mem_size;                       /* Size of buffer =used= */
@@ -710,12 +712,17 @@ if (set_options(argc, argv))/* Parse command line and set options accordingly */
   thumb_mnemonic_table = sym_create_table("Thumb Mnemonics", SYM_TAB_CASE_FLAG);
   directive_table      = sym_create_table("Directives",      SYM_TAB_CASE_FLAG);
 
-  /* Following is crude hack for test/commissioning purposes.        @@@@@    */
-  realpath(argv[0], full_name);				// full path to binary (?) @@
-  for (pChar = full_name; *pChar != '\0'; pChar++);	// find end of string @@
-  while (*pChar != '/') pChar--;			// Cut off last element
-  pChar[1] = '\0';					// Terminate
-  strcat(full_name, "mnemonics");			// Then append filename
+  if (mnemonics_filename == NULL) {
+      /* Following is crude hack for test/commissioning purposes.        @@@@@    */
+    realpath(argv[0], full_name);				// full path to binary (?) @@
+    for (pChar = full_name; *pChar != '\0'; pChar++);	// find end of string @@
+    while (*pChar != '/') pChar--;			// Cut off last element
+    pChar[1] = '\0';					// Terminate
+    strcat(full_name, "mnemonics");			// Then append filename
+  } else {
+    // Mnemonics file specified manually, use it instead of trying to find it
+    strncpy(full_name, mnemonics_filename, 200);
+  }
 
   if ((fMnemonics = fopen(full_name, "r")) == NULL)         /* Read mnemonics */
     fprintf(stderr, "Can't open %s\n", "mnemonics");
@@ -1011,6 +1018,7 @@ if (argc == 1)
   printf("                [<hex number>] following name sets file size\n");
   printf("                    default (max) = %08X\n", VERILOG_MAX);
   printf("                    (output aliases modulo this size)\n");
+  printf("            -m <filename>  specify mnemonics file\n");
   printf("Omitting a filename (or using '-') directs to stdout\n");
   }
 else
@@ -1086,6 +1094,10 @@ else
             argv++;
             }
           }
+        break;
+      case 'M':
+      case 'm':
+        file_option(&mnemonics_stdout, &mnemonics_filename, "Mnemonics");
         break;
 
       default:
