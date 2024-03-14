@@ -54,14 +54,14 @@ impl IguanaEnvironment {
             return Err(LibiguanaError::AasmDoesNotExist);
         }
 
-        match aasm_path.parent() {
-            Some(parent) => {
-                if !parent.join("mnemonics").exists() {
-                    return Err(LibiguanaError::MnemonicsDoesNotExist);
-                }
-            }
-            None => return Err(LibiguanaError::MnemonicsDoesNotExist),
-        }
+        // match aasm_path.parent() {
+        //     Some(parent) => {
+        //         if !parent.join("mnemonics").exists() {
+        //             return Err(LibiguanaError::MnemonicsDoesNotExist);
+        //         }
+        //     }
+        //     None => return Err(LibiguanaError::MnemonicsDoesNotExist),
+        // }
 
         let jimulator_process = Command::new(jimulator_path)
             .stdin(Stdio::piped())
