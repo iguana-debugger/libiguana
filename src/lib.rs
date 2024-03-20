@@ -78,20 +78,26 @@ impl IguanaEnvironment {
         })
     }
 
-    pub fn compile_aasm(&self, aasm_path: &str) -> Result<AasmOutput, LibiguanaError> {
-        let aasm_command = Command::new(&self.aasm_path)
-            .args(["-lk", "/dev/stderr", "-m", &self.mnemonics_path, aasm_path])
-            // .stdin(Stdio::piped())
+    pub fn compile_aasm(&self, aasm_string: &str) -> Result<AasmOutput, LibiguanaError> {
+        let mut aasm_command = Command::new(&self.aasm_path)
+            .args([
+                "-lk",
+                "/dev/stderr",
+                "-m",
+                &self.mnemonics_path,
+                "/dev/stdin",
+            ])
+            .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .spawn()?;
 
         // Write the aasm string into aasm
-        // aasm_command
-        //     .stdin
-        //     .as_mut()
-        //     .ok_or(LibiguanaError::NoStdin)?
-        //     .write_all(aasm_string.as_bytes())?;
+        aasm_command
+            .stdin
+            .as_mut()
+            .ok_or(LibiguanaError::NoStdin)?
+            .write_all(aasm_string.as_bytes())?;
 
         let output = aasm_command.wait_with_output()?;
 
