@@ -15,6 +15,7 @@
 #include <sys/poll.h>
 #include <time.h>
 #include <unistd.h>
+#include <signal.h>
 #include <iostream>
 
 #define uchar unsigned char
@@ -409,7 +410,7 @@ int main(int argc, char** argv) {
     // If there is no parent process, exit. This stops MacIguana from leaving
     // orphaned jimulators about taking up 100% CPU.
     // https://stackoverflow.com/a/2035683/8532605
-    if (getppid() == 1) {
+    if (kill(getppid(), 0)) {
       exit(0);
     }
 
