@@ -402,6 +402,7 @@ impl ReadExact for IguanaEnvironment {
 
 impl Drop for IguanaEnvironment {
     fn drop(&mut self) {
+        println!("Drop called!");
         let mut process = self.jimulator_process.lock().unwrap();
 
         if let Err(e) = process.kill() {
