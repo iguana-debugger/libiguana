@@ -3,7 +3,7 @@ use std::{
     io::{Read, Write},
     os::unix::process::CommandExt,
     path::Path,
-    process::{self, Child, Command, Stdio},
+    process::{Child, Command, Stdio},
     str,
     sync::{Arc, Mutex},
 };
@@ -67,7 +67,7 @@ impl IguanaEnvironment {
         let jimulator_process = Command::new(jimulator_path)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
-            .process_group(process::id() as i32)
+            .process_group(0)
             .spawn()?;
 
         let jimulator_arc_mutex = Arc::new(Mutex::new(jimulator_process));
