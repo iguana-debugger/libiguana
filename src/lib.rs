@@ -1,7 +1,6 @@
 use std::{
     array::TryFromSliceError,
     io::{Read, Write},
-    os::unix::process::CommandExt,
     path::Path,
     process::{Child, Command, Stdio},
     str,
@@ -67,7 +66,6 @@ impl IguanaEnvironment {
         let jimulator_process = Command::new(jimulator_path)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
-            .process_group(0)
             .spawn()?;
 
         let jimulator_arc_mutex = Arc::new(Mutex::new(jimulator_process));
