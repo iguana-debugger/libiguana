@@ -409,8 +409,8 @@ int main(int argc, char** argv) {
   while (true) {
     // If there is no parent process, exit. This stops MacIguana from leaving
     // orphaned jimulators about taking up 100% CPU.
-    // https://stackoverflow.com/a/2035683/8532605
-    if (kill(getppid(), 0)) {
+    // https://stackoverflow.com/a/9153003
+    if (kill(getppid(), 0) == -1 && errno == ESRCH) {
       exit(0);
     }
 
