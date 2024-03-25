@@ -123,6 +123,15 @@ impl IguanaEnvironment {
         self.current_kmd.lock().unwrap().clone()
     }
 
+    /// Kills the underlying jimulator process. This function should not be used from within Rust -
+    /// `IguanaEnvironment` implements `Drop` and handles killing the process for you. This exists
+    /// because for some reason `Drop` isn't working through `uniffi`.
+    pub fn kill_jimulator(&self) -> Result<(), LibiguanaError> {
+        self.jimulator_process.lock().unwrap().kill()?;
+
+        Ok(())
+    }
+
     /// Loads the given .kmd file. [`kmd`] is an unparsed string - parsing is handled by this
     /// function.
     pub fn load_kmd(&self, kmd: &str) -> Result<(), LibiguanaError> {
