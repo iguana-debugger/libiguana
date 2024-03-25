@@ -70,16 +70,6 @@ impl IguanaEnvironment {
 
         let jimulator_arc_mutex = Arc::new(Mutex::new(jimulator_process));
 
-        let handler_jimulator = jimulator_arc_mutex.clone();
-        ctrlc::set_handler(move || {
-            handler_jimulator
-                .lock()
-                .expect("Mutex poisioning D:")
-                .kill()
-                .expect("Failed to kill jimulator!");
-        })
-        .expect("Failed to set handler!");
-
         Ok(Self {
             jimulator_process: jimulator_arc_mutex,
             current_kmd: Arc::new(Mutex::new(None)),
@@ -421,6 +411,7 @@ impl ReadExact for IguanaEnvironment {
 
 impl Drop for IguanaEnvironment {
     fn drop(&mut self) {
+        println!("Drop called!");
         let mut process = self.jimulator_process.lock().unwrap();
 
         if let Err(e) = process.kill() {
