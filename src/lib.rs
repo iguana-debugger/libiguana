@@ -1,5 +1,6 @@
 use std::{
     array::TryFromSliceError,
+    collections::{HashMap, HashSet},
     io::{Read, Write},
     path::Path,
     process::{Child, Command, Stdio},
@@ -39,6 +40,12 @@ pub struct IguanaEnvironment {
 
     /// The path to the `mnemonics` file required by `aasm`.
     mnemonics_path: String,
+
+    /// Currently defined traps, in the format [memory address : trap number]
+    traps: Arc<Mutex<HashMap<u32, u8>>>,
+
+    /// The used trap numbers, with `true` meaning used and `false` meaning unused.
+    used_trap_numbers: Arc<Mutex<[bool; u8::MAX as usize]>>,
 }
 
 #[uniffi::export]
@@ -70,11 +77,15 @@ impl IguanaEnvironment {
 
         let jimulator_arc_mutex = Arc::new(Mutex::new(jimulator_process));
 
+        let traps = Arc::new(Mutex::new(HashMap::new()));
+
         Ok(Self {
             jimulator_process: jimulator_arc_mutex,
             current_kmd: Arc::new(Mutex::new(None)),
             aasm_path,
             mnemonics_path,
+            traps,
+            used_trap_numbers: Arc::new(Mutex::new([false; u8::MAX as usize])),
         })
     }
 
@@ -105,6 +116,37 @@ impl IguanaEnvironment {
 
     pub fn continue_execution(&self) -> Result<(), LibiguanaError> {
         self.write(&[0b0010_0010])?;
+
+        Ok(())
+    }
+
+    pub fn create_new_breakpoint(&self, memory_address: u32) -> Result<(), LibiguanaError> {
+        let mut traps = self.traps.lock().unwrap();
+        let mut used_trap_numbers = self.used_trap_numbers.lock().unwrap();
+
+        let trap_number: u8 = used_trap_numbers
+            .iter()
+            .position(|is_used| !is_used)
+            .ok_or(LibiguanaError::TooManyTraps)? as u8;
+
+        // Initial define trap command
+        self.write(&[0b0011_0000])?;
+
+        self.write(&[
+            trap_number,
+            0b1111_1111, // Trap conditions
+            0b0000_1111, // Transfer size mask (all)
+        ])?;
+
+        // Trap address A and B
+        self.write(&memory_address.to_le_bytes())?;
+        self.write(&u32::MAX.to_le_bytes())?;
+
+        // Data address A and B (unused by Iguana)
+        self.write(&[0, 0])?;
+
+        traps.insert(memory_address, trap_number);
+        used_trap_numbers[trap_number as usize] = true;
 
         Ok(())
     }
@@ -308,6 +350,10 @@ impl IguanaEnvironment {
         };
 
         Ok(status)
+    }
+
+    pub fn traps(&self) -> HashMap<u32, u8> {
+        self.traps.lock().unwrap().clone()
     }
 
     pub fn write_to_terminal(&self, message: &str) -> Result<(), LibiguanaError> {

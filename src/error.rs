@@ -40,4 +40,7 @@ pub enum LibiguanaError {
 
     #[error("The mnemonics file was not found.")]
     MnemonicsDoesNotExist,
+
+    #[error("Too many traps are defined")]
+    TooManyTraps,
 }
