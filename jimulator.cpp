@@ -846,7 +846,7 @@ int getCharArray(int charNumber, uchar* dataPtr) {
   int replycount = 0;
   struct pollfd pollfd;
 
-  // The number of zero-reads that we get. If this value exceeds 1,000,000, we
+  // The number of zero-reads that we get. If this value exceeds 10,000,000, we
   // assume that the program has timed-out.
   int zeroReads = 0;
 
@@ -879,7 +879,7 @@ int getCharArray(int charNumber, uchar* dataPtr) {
       zeroReads = 0;
     }
 
-    if (zeroReads > 1000000) {
+    if (zeroReads > 10000000) {
       std::cerr << "Haven't read anything in a while, assuming timeout" << std::endl;
       exit(1);
     }
