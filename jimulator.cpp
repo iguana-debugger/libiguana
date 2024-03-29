@@ -421,7 +421,7 @@ int main(int argc, char** argv) {
       int pollRes = poll(&pollfd, 1, -1);  // If not running, deschedule until command arrives
 
       if (pollRes < 0) {
-        std::cout << "Poll failed!" << std::endl;
+        std::cerr << "Poll failed!" << std::endl;
         exit(1);
       }
     }
@@ -480,7 +480,7 @@ void monitorOptionsMisc(uchar command) {
       break;
     case BR_PING:
       if (write(1, "OK00", 4) < 0) {
-        std::cout << "Some error occurred!" << std::endl;
+        std::cerr << "Some error occurred!" << std::endl;
       }
       break;
     case BR_WOT_R_U:
@@ -745,13 +745,13 @@ void comm(struct pollfd* pPollfd) {
   int pollRes = poll(pPollfd, 1, 0);
 
   if (pollRes < 0) {
-    std::cout << "Poll failed!" << std::endl;
+    std::cerr << "Poll failed!" << std::endl;
     exit(1);
   }
 
   if (pollRes > 0) {
     if (read(0, &c, 1) < 0) {
-      std::cout << "Some error occurred!" << std::endl;
+      std::cerr << "Some error occurred!" << std::endl;
       exit(1);
     }  // Look at error return - find EOF & exit
     switch (c & 0xC0) {
@@ -850,12 +850,22 @@ int getCharArray(int charNumber, uchar* dataPtr) {
   pollfd.events = POLLIN;
 
   while (charNumber) {
-    if (!poll(&pollfd, 1, -1)) {
+    int pollRes = poll(&pollfd, 1, -1);
+
+    if (pollRes < 0) {
+      std::cerr << "Poll failed!" << std::endl;
+      exit(1);
+    }
+
+    if (!pollRes) {
       return ret - charNumber;
     }
 
     replycount = read(0, dataPtr, charNumber);
     if (replycount < 0) {
+      std::cerr << "Read failed!" << std::endl;
+      exit(1);
+
       replycount = 0;
     }
 
@@ -874,7 +884,7 @@ int getCharArray(int charNumber, uchar* dataPtr) {
  */
 int sendCharArray(int charNumber, uchar* dataPtr) {
   if (write(1, dataPtr, charNumber) < 0) {
-    std::cout << "Some error occurred!" << std::endl;
+    std::cerr << "Some error occurred!" << std::endl;
   }
 
   return charNumber;  // send char array to the board
