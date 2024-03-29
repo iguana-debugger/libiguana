@@ -1,6 +1,6 @@
 use std::{
     array::TryFromSliceError,
-    collections::{HashMap, HashSet},
+    collections::HashMap,
     io::{Read, Write},
     path::Path,
     process::{Child, Command, Stdio},
