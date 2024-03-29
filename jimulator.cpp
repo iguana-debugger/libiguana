@@ -418,7 +418,12 @@ int main(int argc, char** argv) {
     if ((status & CLIENT_STATE_CLASS_MASK) == CLIENT_STATE_CLASS_RUNNING) {
       step();  // Step emulator as required
     } else {
-      poll(&pollfd, 1, -1);  // If not running, deschedule until command arrives
+      int pollRes = poll(&pollfd, 1, -1);  // If not running, deschedule until command arrives
+
+      if (pollRes < 0) {
+        std::cout << "Poll failed!" << std::endl;
+        exit(1);
+      }
     }
   }
 
