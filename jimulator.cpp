@@ -740,6 +740,7 @@ void comm(struct pollfd* pPollfd) {
   if (poll(pPollfd, 1, 0) > 0) {
     if (read(0, &c, 1) < 0) {
       std::cout << "Some error occurred!" << std::endl;
+      exit(1);
     }  // Look at error return - find EOF & exit
     switch (c & 0xC0) {
       case 0x00:
