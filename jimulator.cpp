@@ -737,7 +737,14 @@ void monitorBreakpoints(uchar c) {
 void comm(struct pollfd* pPollfd) {
   uchar c;
 
-  if (poll(pPollfd, 1, 0) > 0) {
+  int pollRes = poll(pPollfd, 1, 0);
+
+  if (pollRes < 0) {
+    std::cout << "Poll failed!" << std::endl;
+    exit(1);
+  }
+
+  if (pollRes > 0) {
     if (read(0, &c, 1) < 0) {
       std::cout << "Some error occurred!" << std::endl;
       exit(1);
