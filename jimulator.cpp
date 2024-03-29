@@ -10,6 +10,7 @@
  * @todo interrupt enable behaviour on exceptions (etc.)
  */
 
+#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/poll.h>
@@ -850,6 +851,11 @@ int getCharArray(int charNumber, uchar* dataPtr) {
   pollfd.events = POLLIN;
 
   while (charNumber) {
+    if (fcntl(pollfd.fd, F_GETFD) == -1) {
+      std::cerr << "File descriptor is invalid!" << std::endl;
+      exit(1);
+    }
+
     int pollRes = poll(&pollfd, 1, -1);
 
     if (pollRes < 0) {
