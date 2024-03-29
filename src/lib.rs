@@ -304,9 +304,9 @@ impl IguanaEnvironment {
         Ok(())
     }
 
-    pub fn terminal_messages(&self) -> Result<String, LibiguanaError> {
+    pub fn terminal_messages(&self) -> Result<Vec<u8>, LibiguanaError> {
         let mut length = 1;
-        let mut output = String::new();
+        let mut output = Vec::new();
 
         while length != 0 {
             self.write(&[0b0001_0011, 0, 32])?;
@@ -325,9 +325,7 @@ impl IguanaEnvironment {
 
             self.read_exact(&mut buf)?;
 
-            let read_str = str::from_utf8(&buf)?;
-
-            output.push_str(read_str);
+            output.append(&mut buf);
         }
 
         Ok(output)

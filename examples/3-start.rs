@@ -22,8 +22,9 @@ fn main() {
         }
 
         let terminal = env.terminal_messages().expect("Failed to read!");
+        let terminal_string = String::from_utf8(terminal).expect("Failed to convert from UTF8!");
 
-        print!("{terminal}");
+        print!("{terminal_string}");
     }
 
     let status = env.status().expect("Failed to get status!");
