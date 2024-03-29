@@ -13,10 +13,10 @@ jobs:
 
       - name: Compile Jimulator
         run: clang++ -g -std=c++14 -arch x86_64 -arch arm64 -o jimulator jimulator.cpp
-      - name: Strip Jimulator
-        run: strip jimulator
-      - name: Sign Jimulator
-        run: codesign -s - -i com.unicornsonlsd.jimulator -o runtime -f jimulator
+      # - name: Strip Jimulator
+      #   run: strip jimulator
+      # - name: Sign Jimulator
+      #   run: codesign -s - -i com.unicornsonlsd.jimulator -o runtime -f jimulator
       - name: Compile aasm for x86 # ARM build is in repo, can't autobuild :(
         run: gcc-13 -O2 -o aasm.x86_64 aasm.c
       - name: Strip x86 aasm
