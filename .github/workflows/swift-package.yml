@@ -26,7 +26,7 @@ jobs:
       - name: Sign aasm
         run: codesign -s - -i com.unicornsonlsd.aasm -o runtime -f aasm
       - name: Install cargo-swift
-        run: cargo install cargo-swift
+        run: cargo install cargo-swift --version 0.6.1
       - name: Install Rust targets
         run: rustup target add aarch64-apple-darwin x86_64-apple-darwin
       - name: Build Swift package
