@@ -354,14 +354,9 @@ impl IguanaEnvironment {
         self.traps.lock().unwrap().clone()
     }
 
-    pub fn write_to_terminal(&self, message: &str) -> Result<(), LibiguanaError> {
-        // Komodo almost definitely expects ASCII, it'd be interesting to see what happens when we
-        // send something that doesn't directly translate from UTF-8 to ASCII (i.e., anything not in
-        // ASCII)
-        let buf = message.as_bytes();
-
+    pub fn write_to_terminal(&self, message: &[u8]) -> Result<(), LibiguanaError> {
         // jimulator only takes one byte as length, so we have to chunk the input into chunks of 256
-        let chunks = buf.chunks(u8::MAX as usize);
+        let chunks = message.chunks(u8::MAX as usize);
 
         for chunk in chunks {
             self.write(&[0b0001_0010])?;
