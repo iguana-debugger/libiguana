@@ -3,7 +3,7 @@ name: Publish Swift Package
 on:
   push:
     branches:
-      - jimulator
+      - main
 
 jobs:
   swift-package:
