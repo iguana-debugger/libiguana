@@ -1,7 +1,6 @@
 use std::{
     array::TryFromSliceError,
     collections::HashMap,
-    io::{Read, Write},
     path::Path,
     process::{Child, Command, Stdio},
     str,
@@ -11,12 +10,14 @@ use std::{
 mod aasm_output;
 mod error;
 mod kmdparse_types;
+mod reader_writer;
 mod registers;
 mod status;
 mod uniffi_array;
 
 use kmdparse::{parse_kmd, token::Token, word::Word};
 use kmdparse_types::token::KmdparseToken;
+use reader_writer::ReaderWriter;
 
 use crate::status::BoardState;
 
@@ -115,12 +116,15 @@ impl IguanaEnvironment {
     }
 
     pub fn continue_execution(&self) -> Result<(), LibiguanaError> {
-        self.write(&[0b0010_0010])?;
+        let mut process = self.jimulator_process.lock().unwrap();
+
+        ReaderWriter::write(&[0b0010_0010], &mut process)?;
 
         Ok(())
     }
 
     pub fn create_new_breakpoint(&self, memory_address: u32) -> Result<(), LibiguanaError> {
+        let mut process = self.jimulator_process.lock().unwrap();
         let mut traps = self.traps.lock().unwrap();
         let mut used_trap_numbers = self.used_trap_numbers.lock().unwrap();
 
@@ -130,20 +134,23 @@ impl IguanaEnvironment {
             .ok_or(LibiguanaError::TooManyTraps)? as u8;
 
         // Initial define trap command
-        self.write(&[0b0011_0000])?;
+        ReaderWriter::write(&[0b0011_0000], &mut process)?;
 
-        self.write(&[
-            trap_number,
-            0b1111_1111, // Trap conditions
-            0b0000_1111, // Transfer size mask (all)
-        ])?;
+        ReaderWriter::write(
+            &[
+                trap_number,
+                0b1111_1111, // Trap conditions
+                0b0000_1111, // Transfer size mask (all)
+            ],
+            &mut process,
+        )?;
 
         // Trap address A and B
-        self.write(&memory_address.to_le_bytes())?;
-        self.write(&u32::MAX.to_le_bytes())?;
+        ReaderWriter::write(&memory_address.to_le_bytes(), &mut process)?;
+        ReaderWriter::write(&u32::MAX.to_le_bytes(), &mut process)?;
 
         // Data address A and B (unused by Iguana)
-        self.write(&[0, 0])?;
+        ReaderWriter::write(&[0, 0], &mut process)?;
 
         traps.insert(memory_address, trap_number);
         used_trap_numbers[trap_number as usize] = true;
@@ -198,17 +205,21 @@ impl IguanaEnvironment {
 
     // Pauses execution.
     pub fn pause(&self) -> Result<(), LibiguanaError> {
-        self.write(&[0b0010_0010])?;
+        let mut process = self.jimulator_process.lock().unwrap();
+
+        ReaderWriter::write(&[0b0010_0010], &mut process)?;
 
         Ok(())
     }
 
     pub fn ping(&self) -> Result<String, LibiguanaError> {
-        self.write(&[0b0000_0001])?;
+        let mut process = self.jimulator_process.lock().unwrap();
+
+        ReaderWriter::write(&[0b0000_0001], &mut process)?;
 
         let mut buf = [0; 4];
 
-        self.read_exact(&mut buf)?;
+        ReaderWriter::read_exact(&mut buf, &mut process)?;
 
         let response = str::from_utf8(&buf)?.to_string();
 
@@ -216,34 +227,38 @@ impl IguanaEnvironment {
     }
 
     pub fn read_memory(&self, address: u32) -> Result<[u8; 4], LibiguanaError> {
+        let mut process = self.jimulator_process.lock().unwrap();
+
         // Write memory transfer command (mem space, read, 32 bit)
-        self.write(&[0b01_00_1_010])?;
+        ReaderWriter::write(&[0b01_00_1_010], &mut process)?;
 
         // Write address
-        self.write(&address.to_le_bytes())?;
+        ReaderWriter::write(&address.to_le_bytes(), &mut process)?;
 
         // Write length (1)
-        self.write(&1_u16.to_le_bytes())?;
+        ReaderWriter::write(&1_u16.to_le_bytes(), &mut process)?;
 
         let mut buf = [0; 4];
-        self.read_exact(&mut buf)?;
+        ReaderWriter::read_exact(&mut buf, &mut process)?;
 
         Ok(buf)
     }
 
     pub fn registers(&self) -> Result<Registers, LibiguanaError> {
+        let mut process = self.jimulator_process.lock().unwrap();
+
         // Write memory transfer command (reg space, read, 32 bit)
-        self.write(&[0b01_01_1_010])?;
+        ReaderWriter::write(&[0b01_01_1_010], &mut process)?;
 
         // Write address (0, it's what KoMo2 does)
-        self.write(&0_u32.to_le_bytes())?;
+        ReaderWriter::write(&0_u32.to_le_bytes(), &mut process)?;
 
         // Write length (16)
-        self.write(&16_u16.to_le_bytes())?;
+        ReaderWriter::write(&16_u16.to_le_bytes(), &mut process)?;
 
         let mut buf = [0; 64];
 
-        self.read_exact(&mut buf)?;
+        ReaderWriter::read_exact(&mut buf, &mut process)?;
 
         // Convert the buf of u8s into a buf of u32s. This code is a bit clunky because array_chunks
         // isn't in stable yet, so we have to manually try_into all of the slices. This also
@@ -284,7 +299,9 @@ impl IguanaEnvironment {
     }
 
     pub fn reset(&self) -> Result<(), LibiguanaError> {
-        self.write(&[0b0000_0100])?;
+        let mut process = self.jimulator_process.lock().unwrap();
+
+        ReaderWriter::write(&[0b0000_0100], &mut process)?;
 
         Ok(())
     }
@@ -292,28 +309,34 @@ impl IguanaEnvironment {
     /// Starts execution, with the given step limit. If the step limit is 0, the emulator will
     /// execute indefinitely.
     pub fn start_execution(&self, steps: u32) -> Result<(), LibiguanaError> {
-        self.write(&[0b1011_0000])?;
-        self.write(&steps.to_le_bytes())?;
+        let mut process = self.jimulator_process.lock().unwrap();
+
+        ReaderWriter::write(&[0b1011_0000], &mut process)?;
+        ReaderWriter::write(&steps.to_le_bytes(), &mut process)?;
 
         Ok(())
     }
 
     pub fn stop_execution(&self) -> Result<(), LibiguanaError> {
-        self.write(&[0b0010_0001])?;
+        let mut process = self.jimulator_process.lock().unwrap();
+
+        ReaderWriter::write(&[0b0010_0001], &mut process)?;
 
         Ok(())
     }
 
     pub fn terminal_messages(&self) -> Result<Vec<u8>, LibiguanaError> {
+        let mut process = self.jimulator_process.lock().unwrap();
+
         let mut length = 1;
         let mut output = Vec::new();
 
         while length != 0 {
-            self.write(&[0b0001_0011, 0, 32])?;
+            ReaderWriter::write(&[0b0001_0011, 0, 32], &mut process)?;
 
             let mut len_buf = [0; 1];
 
-            self.read_exact(&mut len_buf)?;
+            ReaderWriter::read_exact(&mut len_buf, &mut process)?;
 
             length = len_buf[0];
 
@@ -323,7 +346,7 @@ impl IguanaEnvironment {
 
             let mut buf = vec![0; length as usize];
 
-            self.read_exact(&mut buf)?;
+            ReaderWriter::read_exact(&mut buf, &mut process)?;
 
             output.append(&mut buf);
         }
@@ -332,11 +355,13 @@ impl IguanaEnvironment {
     }
 
     pub fn status(&self) -> Result<BoardState, LibiguanaError> {
-        self.write(&[0b0010_0000])?;
+        let mut process = self.jimulator_process.lock().unwrap();
+
+        ReaderWriter::write(&[0b0010_0000], &mut process)?;
 
         let mut buf = [0; 9];
 
-        self.read_exact(&mut buf)?;
+        ReaderWriter::read_exact(&mut buf, &mut process)?;
 
         let steps_remaining = u32::from_le_bytes(buf[1..5].try_into()?);
         let steps_since_reset = u32::from_le_bytes(buf[5..9].try_into()?);
@@ -355,94 +380,49 @@ impl IguanaEnvironment {
     }
 
     pub fn write_to_terminal(&self, message: &[u8]) -> Result<(), LibiguanaError> {
+        let mut process = self.jimulator_process.lock().unwrap();
+
         // jimulator only takes one byte as length, so we have to chunk the input into chunks of 256
         let chunks = message.chunks(u8::MAX as usize);
 
         for chunk in chunks {
-            self.write(&[0b0001_0010])?;
+            ReaderWriter::write(&[0b0001_0010], &mut process)?;
 
             // Terminal 0
-            self.write(&[0])?;
+            ReaderWriter::write(&[0], &mut process)?;
 
             // to_le_bytes doesn't technically guarantee that the length here is one, but since a
             // chunk's length can't be more than one u8 it should never happen.
-            self.write(&chunk.len().to_le_bytes())?;
+            ReaderWriter::write(&chunk.len().to_le_bytes(), &mut process)?;
 
-            self.write(chunk)?;
+            ReaderWriter::write(chunk, &mut process)?;
 
             // jimulator returns 0 after every write for some reason
-            self.read_exact(&mut [0])?;
+            ReaderWriter::read_exact(&mut [0], &mut process)?;
         }
-
-        Ok(())
-    }
-
-    /// Reads from the jimulator process using read_until_end.
-    fn read_to_end(&self) -> Result<Vec<u8>, LibiguanaError> {
-        let mut buf = Vec::new();
-
-        let mut process = self.jimulator_process.lock().unwrap();
-
-        process
-            .stdout
-            .as_mut()
-            .ok_or(LibiguanaError::NoStdout)?
-            .read_to_end(&mut buf)?;
-
-        Ok(buf)
-    }
-
-    /// Writes the given byte array to the jimulator process.
-    fn write(&self, payload: &[u8]) -> Result<(), LibiguanaError> {
-        let process = self.jimulator_process.lock().unwrap();
-
-        process
-            .stdin
-            .as_ref()
-            .ok_or(LibiguanaError::NoStdin)?
-            .write_all(payload)?;
 
         Ok(())
     }
 
     fn write_memory(&self, word: &[u8], address: u32) -> Result<(), LibiguanaError> {
+        let mut process = self.jimulator_process.lock().unwrap();
+
         if word.is_empty() {
             return Ok(());
         }
 
         // Write memory transfer command (mem space, write, 8 bit)
-        self.write(&[0b01_00_0_000])?;
+        ReaderWriter::write(&[0b01_00_0_000], &mut process)?;
 
         // Write address
-        self.write(&address.to_le_bytes())?;
+        ReaderWriter::write(&address.to_le_bytes(), &mut process)?;
 
         let num_elements: u16 = word.len().try_into()?;
 
         // Write number of elements (number of elements in address slice)
-        self.write(&num_elements.to_le_bytes())?;
+        ReaderWriter::write(&num_elements.to_le_bytes(), &mut process)?;
 
-        self.write(word)?;
-
-        Ok(())
-    }
-}
-
-// uniffi doesn't support &mut [T], so we extract it into a trait here (luckily read_exact is
-// internal)
-trait ReadExact {
-    fn read_exact(&self, buf: &mut [u8]) -> Result<(), LibiguanaError>;
-}
-
-impl ReadExact for IguanaEnvironment {
-    /// Reads from the jimulator process using read_exact.
-    fn read_exact(&self, buf: &mut [u8]) -> Result<(), LibiguanaError> {
-        let mut process = self.jimulator_process.lock().unwrap();
-
-        process
-            .stdout
-            .as_mut()
-            .ok_or(LibiguanaError::NoStdout)?
-            .read_exact(buf)?;
+        ReaderWriter::write(word, &mut process)?;
 
         Ok(())
     }
