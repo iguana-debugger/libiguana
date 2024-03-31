@@ -391,9 +391,8 @@ impl IguanaEnvironment {
             // Terminal 0
             ReaderWriter::write(&[0], &mut process)?;
 
-            // to_le_bytes doesn't technically guarantee that the length here is one, but since a
-            // chunk's length can't be more than one u8 it should never happen.
-            ReaderWriter::write(&chunk.len().to_le_bytes(), &mut process)?;
+            // Casting here should be fine, a chunk can't be bigger than u8::MAX
+            ReaderWriter::write(&[chunk.len() as u8], &mut process)?;
 
             ReaderWriter::write(chunk, &mut process)?;
 
