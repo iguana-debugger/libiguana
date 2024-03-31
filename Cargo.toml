@@ -6,9 +6,15 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+enum-utils = "0.1.2"
 kmdparse = { git = "https://github.com/iguana-debugger/kmdparse.git", version = "0.1.0" }
-unicorn-engine = { version = "2.0.1", features = ["dynamic_linkage"] }
+nom = "7.1.3"
+thiserror = "1.0.56"
+uniffi = "0.26.1"
 
 [lib]
-crate-type = ["cdylib", "lib"]
+crate-type = ["staticlib", "lib"]
 name = "libiguana"
+
+[build-dependencies]
+uniffi = { version = "0.26.1", features = [ "build" ] }
