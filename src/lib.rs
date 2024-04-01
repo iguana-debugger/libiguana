@@ -227,7 +227,7 @@ impl IguanaEnvironment {
         Ok(response)
     }
 
-    pub fn read_memory(&self, address: u32) -> Result<[u8; 4], LibiguanaError> {
+    pub fn read_memory(&self, address: u32) -> Result<u32, LibiguanaError> {
         let mut process = self.jimulator_process.lock().unwrap();
 
         // Write memory transfer command (mem space, read, 32 bit)
@@ -242,7 +242,7 @@ impl IguanaEnvironment {
         let mut buf = [0; 4];
         ReaderWriter::read_exact(&mut buf, &mut process)?;
 
-        Ok(buf)
+        Ok(u32::from_le_bytes(buf))
     }
 
     pub fn registers(&self) -> Result<Registers, LibiguanaError> {
