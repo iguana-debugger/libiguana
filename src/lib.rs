@@ -8,6 +8,7 @@ use std::{
 };
 
 mod aasm_output;
+pub mod arm_decoder;
 mod error;
 mod kmdparse_types;
 mod reader_writer;
