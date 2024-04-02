@@ -151,7 +151,7 @@ impl IguanaEnvironment {
         ReaderWriter::write(&u32::MAX.to_le_bytes(), &mut process)?;
 
         // Data address A and B (unused by Iguana)
-        ReaderWriter::write(&[0, 0], &mut process)?;
+        ReaderWriter::write(&[0; 16], &mut process)?;
 
         traps.insert(memory_address, trap_number);
         used_trap_numbers[trap_number as usize] = true;
