@@ -20,9 +20,11 @@ pub fn decode_instruction(word: u32) -> Result<String, DecoderError> {
 
     let decoder = <ARMv7 as yaxpeax_arch::Arch>::Decoder::default(); // what a line
 
+    // It'd make way more sense to return the entire instruction here but uniffi would make that a
+    // massive pain
     let instruction_string = decoder
         .decode(&mut reader)
-        .map(|instruction| instruction.to_string())?;
+        .map(|instruction| instruction.to_string().to_uppercase())?;
 
     Ok(instruction_string)
 }
