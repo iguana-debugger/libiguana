@@ -124,7 +124,7 @@ impl IguanaEnvironment {
         Ok(())
     }
 
-    pub fn create_new_breakpoint(&self, memory_address: u32) -> Result<(), LibiguanaError> {
+    pub fn create_breakpoint(&self, memory_address: u32) -> Result<(), LibiguanaError> {
         let mut process = self.jimulator_process.lock().unwrap();
         let mut traps = self.traps.lock().unwrap();
         let mut used_trap_numbers = self.used_trap_numbers.lock().unwrap();
