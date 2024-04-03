@@ -43,4 +43,7 @@ pub enum LibiguanaError {
 
     #[error("Too many traps are defined")]
     TooManyTraps,
+
+    #[error("A trap was not defined for address {0}")]
+    NoTrapForAddress(u32),
 }

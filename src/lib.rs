@@ -299,12 +299,20 @@ impl IguanaEnvironment {
         Ok(registers)
     }
 
-    pub fn remove_breakpoint(&self, trap_number: u8) -> Result<(), LibiguanaError> {
+    pub fn remove_breakpoint(&self, memory_address: u32) -> Result<(), LibiguanaError> {
         let mut process = self.jimulator_process.lock().unwrap();
+        let mut traps = self.traps.lock().unwrap();
+        let mut used_trap_numbers = self.used_trap_numbers.lock().unwrap();
+
+        let trap_number = traps
+            .remove(&memory_address)
+            .ok_or(LibiguanaError::NoTrapForAddress(memory_address))?;
 
         // Send word A (all 0s - disable)
         ReaderWriter::write(&[0; 4], &mut process)?;
         ReaderWriter::write(&(trap_number as u32).to_le_bytes(), &mut process)?;
+
+        used_trap_numbers[trap_number as usize] = false;
 
         Ok(())
     }
