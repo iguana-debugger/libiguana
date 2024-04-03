@@ -299,6 +299,16 @@ impl IguanaEnvironment {
         Ok(registers)
     }
 
+    pub fn remove_breakpoint(&self, trap_number: u8) -> Result<(), LibiguanaError> {
+        let mut process = self.jimulator_process.lock().unwrap();
+
+        // Send word A (all 0s - disable)
+        ReaderWriter::write(&[0; 4], &mut process)?;
+        ReaderWriter::write(&(trap_number as u32).to_le_bytes(), &mut process)?;
+
+        Ok(())
+    }
+
     pub fn reset(&self) -> Result<(), LibiguanaError> {
         let mut process = self.jimulator_process.lock().unwrap();
 
