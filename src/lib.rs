@@ -319,8 +319,13 @@ impl IguanaEnvironment {
 
     pub fn reset(&self) -> Result<(), LibiguanaError> {
         let mut process = self.jimulator_process.lock().unwrap();
+        let mut traps = self.traps.lock().unwrap();
+        let mut used_trap_numbers = self.used_trap_numbers.lock().unwrap();
 
         ReaderWriter::write(&[0b0000_0100], &mut process)?;
+
+        traps.clear();
+        *used_trap_numbers = [false; u8::MAX as usize];
 
         Ok(())
     }
